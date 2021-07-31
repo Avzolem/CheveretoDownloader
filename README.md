@@ -26,6 +26,10 @@ The script will then scrape all the image links from the album and download them
 
 
 # Planned Future Improvements
+Test with infinite scroll
+
+Detection of logo image to prevent downloader from trying to download this, it currently fails to download any logo images which is good but it does show up as an error in the downloader
+
 Multi-threaded Downloads
 
 Error retry
