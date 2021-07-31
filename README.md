@@ -11,8 +11,9 @@ The script creates a new folder with the title of the album and downloads all im
 
 # Installation
 1. Install Python. You must select the option to add Python to PATH
+![0001_add_Python_to_Path.png](https://s1.putme.ga/0001_add_Python_to_Path.png)
 2. Download the latest release from https://github.com/MandoCoding/CheveretoDownloader/releases and extract
-3. Run Start.bat to install all the necessary pre-requisites and then start the download script
+3. Run Start.bat to install all the necessary pre-requisites and start the download script
 
 
 # Use
