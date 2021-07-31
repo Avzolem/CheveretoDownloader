@@ -28,6 +28,8 @@ The script will then scrape all the image links from the album and download them
 # Planned Future Improvements
 Multi-threaded Downloads
 
+Error retry
+
 Bulk Downloader for multiple album URLs
 
 Cyberdrop and other site support?
