@@ -26,7 +26,7 @@ The script will then scrape all the image links from the album and download them
 
 
 # Supported Sites
-So far this tool has been tested and confirmed working with the following sites
+So far this tool has been tested and confirmed working with the following sites:
 
 Putmega
 
