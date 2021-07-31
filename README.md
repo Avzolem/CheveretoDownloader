@@ -25,6 +25,14 @@ Enter a URL when required and press enter
 The script will then scrape all the image links from the album and download them into a new folder with the album name 
 
 
+# Supported Sites
+So far this tool has been tested and confirmed working with the following sites
+
+Putmega
+
+Pixl
+
+
 # Planned Future Improvements
 Test with infinite scroll
 
