@@ -1,28 +1,36 @@
 # CheveretoDownloader
-# v0.1
+# v0.2
 # FeelsGeniusMan
 import requests, sys, os, re
 from bs4 import BeautifulSoup
 
+# define some values for later
 i = 1
-
 pages = []
-print('CheveretoDownloader v0.1')
+urls = []
+correctedlinks = []
+
+# Tool intro and ask user for an album URL
+print('CheveretoDownloader')
 inp = input('[x] Enter the Album (Page) URL and press enter: ').strip()
-test = inp
-# regex, searches for the name in the album URL and prints it in the following line
-id = re.search('(?<=album\/)(.*?)(?=\.)', inp)[0]
-dir = id.replace("-", " ").title()
+
+# find the Album name from the meta tag og:title
+Albuminp = requests.get(inp)
+searched = BeautifulSoup(Albuminp.text, 'html.parser')
+dir = searched.find("meta", {"property": "og:title"}).attrs['content']
+
+# create a directory with the album name (dir) if no directory exists
 try:
     os.mkdir(dir)
     print(f'[~] Directory', dir, 'created.')
 except OSError as error:
     print(f'[~] Directory', dir, 'already exists')
-# creates a directory with the album name (id) in title case
-os.chdir(dir)
-# changes to the new directory so that files are saved in it
 
-print(f'[~] Scraping pages of {id}:')
+# change to the new directory so that files are saved in it
+os.chdir(dir)
+
+
+print(f'[~] Scraping pages of {dir}:')
 pages.append(inp)
 print(inp)
 while i < 2:
@@ -46,30 +54,27 @@ while i < 2:
 
 print('[~] Page links scraped')
 
-
-urls = []
 # creates a session of the html request module so that multiple downloads run quickly
 s = requests.Session()
 print ('[~] Scraping image links')
 
-correctedlinks = []
+# Removes blank links
 for val in pages:
     if val != None :
         correctedlinks.append(val)
 
+# Searches through links for image urls
 for link in correctedlinks:
     with s.get(link) as r:
         # parses the html
-        bs = BeautifulSoup(r.text, 'html.parser')
         # searches for all image links in the html
-        es = bs.find_all('img')
+        bs = BeautifulSoup(r.text, 'html.parser')
+        new = bs.find('div', {'class': 'pad-content-listing'})
+        es = [image["src"] for image in new.findAll("img")]
         for e in es:
-            # if the image link is not the logo, it looks for the "src" child of the img element
-            if e['alt'] != 'PutMega':
-                # replaces the url extension of "src" as the preview thumbnails have a different one
-                u = e['src'].replace('.md.', '.').replace('.th.', '.')
-                # caches the image urls in a list
-                urls.append(u)
+            u = e.replace('.md.', '.').replace('.th.', '.')
+            # caches the image urls in a list
+            urls.append(u)
 print(f'[~] Downloading {len(urls)} images')
 
 excpts = 0
