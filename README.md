@@ -22,7 +22,7 @@ Once all the installation steps are complete you can either double click on 'Sta
 
 Enter a URL when required and press enter
 
-The script will then scrape all the image links from the album and download them into a new folder with the album name 
+The script will scrape all the image links from the album and then download them into a new folder with the album name 
 
 
 # Supported Sites
