@@ -101,7 +101,7 @@ if __name__ == '__main__':
 
     response = requests.get("https://api.github.com/repos/MandoCoding/CheveretoDownloader/releases/latest")
     latestVersion = response.json()["tag_name"]
-    currentVersion = "0.3"
+    currentVersion = "v0.3"
     clear()
     if latestVersion != currentVersion:
         print("A new version of CheveretoDownloader is available\n"
