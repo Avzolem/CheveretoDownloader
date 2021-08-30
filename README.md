@@ -36,12 +36,6 @@ https://pixl.is/
 # Planned Future Improvements
 Test with infinite scroll
 
-Multi-threaded Downloads
-
-Error retry
-
-Bulk Downloader for multiple album URLs
-
 Windows GUI to remove need for Python install
 
 Cyberdrop and other site support?
