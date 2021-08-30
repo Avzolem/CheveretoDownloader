@@ -1,98 +1,179 @@
-# CheveretoDownloader
-# v0.2
-# FeelsGeniusMan
-import requests, sys, os, re
-from bs4 import BeautifulSoup
+# Mando's Chevereto Downloader Taking Elements from the Cyberdrop Gallery Downloader by Jules--Winnfield
 
-# define some values for later
-i = 1
-pages = []
-urls = []
-correctedlinks = []
-
-# Tool intro and ask user for an album URL
-print('CheveretoDownloader')
-inp = input('[x] Enter the Album (Page) URL and press enter: ').strip()
-
-# find the Album name from the meta tag og:title
-Albuminp = requests.get(inp)
-searched = BeautifulSoup(Albuminp.text, 'html.parser')
-dir = searched.find("meta", {"property": "og:title"}).attrs['content']
-
-# create a directory with the album name (dir) if no directory exists
-try:
-    os.mkdir(dir)
-    print(f'[~] Directory', dir, 'created.')
-except OSError as error:
-    print(f'[~] Directory', dir, 'already exists')
-
-# change to the new directory so that files are saved in it
-os.chdir(dir)
+import requests
+import os
+import re
+from colorama import Fore, Style
+from geturls import Extrair_Links
+from multiprocessing import Pool
+import multiprocessing
+import settings
 
 
-print(f'[~] Scraping pages of {dir}:')
-pages.append(inp)
-print(inp)
-while i < 2:
-    # searches for links within the page
-    reqs = requests.get(inp)
-    soup = BeautifulSoup(reqs.text, 'html.parser')
-    # searches for next page link
-    li = soup.find("li", {'class': 'pagination-next'})
-    if li == None:
-        i=2
-    else:
-        for child in li.children:
-            nextURL = child.get("href")
-            print(nextURL)
-            pages.append(nextURL)
-        if not nextURL:
-            i=2
-        else:
-            inp = nextURL
+class Error(Exception):
+    """Base class for exceptions in this module."""
+    pass
 
 
-print('[~] Page links scraped')
+class SizeError(Error):
+    """Exception raised for errors in the input.
+    Attributes:
+        expression -- input expression in which the error occurred
+        message -- explanation of the error
+    """
 
-# creates a session of the html request module so that multiple downloads run quickly
-s = requests.Session()
-print ('[~] Scraping image links')
+    def __init__(self, expression, message):
+        self.expression = expression
+        self.message = message
 
-# Removes blank links
-for val in pages:
-    if val != None :
-        correctedlinks.append(val)
 
-# Searches through links for image urls
-for link in correctedlinks:
-    with s.get(link) as r:
-        # parses the html
-        # searches for all image links in the html
-        bs = BeautifulSoup(r.text, 'html.parser')
-        new = bs.find('div', {'class': 'pad-content-listing'})
-        es = [image["src"] for image in new.findAll("img")]
-        for e in es:
-            u = e.replace('.md.', '.').replace('.th.', '.')
-            # caches the image urls in a list
-            urls.append(u)
-print(f'[~] Downloading {len(urls)} images')
+def log(text, style):
+    # Log function for printing to command line
+    print(style + str(text) + Style.RESET_ALL)
 
-excpts = 0
-for u in urls:
-    # gets the filename from the image url
-    fn = u.split('/', 3)[3]
-    print(f'[~] Saving - {fn}')
+
+def clear():
+    # Clears command window
+    os.system('cls' if os.name == 'nt' else 'clear')
+
+
+def download(passed_from_main):
+    _path = passed_from_main[0]
+    _item = passed_from_main[1]
+    attempts = 1
+    attemptsToTry = (settings.file_attempts + 1) if settings.file_attempts != 0 else 0
     try:
-        with s.get(u) as r:
-            with open(fn, 'wb') as o:
-                # downloads in chunks to save memory
-                for c in r.iter_content(chunk_size=8192):
-                    o.write(c)
-    except:
-        print(f'[!] Error - {u}')
-        # counts errors
-        excpts += 1
-        continue
+        while True:
+            filename = _item[_item.rfind("/") + 1:]
+            _url = _item
 
-print(f'[+] Album downloaded, {excpts} failed download(s)')
-exitText = input("\nFinished. Press enter to quit.")
+            if attemptsToTry != 0 and attempts >= attemptsToTry:
+                log("        Hit user specified attempt limit" + " for " + filename + " skipping file", Fore.RED)
+                break
+            else:
+                if attempts != 1:
+                    log("        Retrying " + filename + "...", Fore.YELLOW)
+                try:
+
+                    response = requests.get(_url, stream=True)
+                    incomingFileSize = int(response.headers['Content-length'])
+
+                    if os.path.isfile(_path + str(filename)):
+                        storedFileSize = os.path.getsize(_path + str(filename))
+                        if incomingFileSize == storedFileSize:
+                            log("           " + filename + " already exists.", Fore.LIGHTBLACK_EX)
+                            break
+                        else:
+                            log("           " + filename + " already exists, but is corrupt", Fore.LIGHTBLACK_EX)
+                            os.remove(_path + str(filename))
+
+                    log("        Downloading " + filename + "...", Fore.LIGHTBLACK_EX)
+
+                    with open(_path + str(filename), "wb") as out_file:
+                        for chunk in response.iter_content(chunk_size=50000):
+                            if chunk:
+                                out_file.write(chunk)
+                    del response
+                    if os.path.isfile(_path + str(filename)):
+                        storedFileSize = os.path.getsize(_path + str(filename))
+                        if incomingFileSize == storedFileSize:
+                            log("        Finished " + filename, Fore.GREEN)
+                            break
+                        else:
+                            raise SizeError("File Size Specified: {} bytes, File Size Obtained: {} bytes".format(
+                                incomingFileSize, storedFileSize), "These file sizes don't match")
+                    else:
+                        log("        Something went wrong" + " for " + filename, Fore.RED)
+                        attempts += 1
+                except Exception as e:
+                    # log(e, Fore.RED)
+                    os.remove(_path + str(filename))
+                    log("        Failed attempt " + str(attempts) + " for " + filename, Fore.RED)
+                    attempts += 1
+
+    except Exception as e:
+        print(e)
+        print("Failed to Download")
+
+
+if __name__ == '__main__':
+    log("", Fore.RESET)
+
+    response = requests.get("https://api.github.com/repos/MandoCoding/CheveretoDownloader/releases/latest")
+    latestVersion = response.json()["tag_name"]
+    currentVersion = "0.3"
+
+    if latestVersion != currentVersion:
+        print("A new version of CheveretoDownloader is available\n"
+              "Download it here: https://github.com/MandoCoding/CheveretoDownloader/releases/latest\n")
+
+    headers = {'headers': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:51.0) Gecko/20100101 Firefox/51.0'}
+
+    cpu_count = settings.threads if settings.threads != 0 else multiprocessing.cpu_count()
+    downloadFolder = settings.download_folder
+
+    if downloadFolder == "./Downloads/":
+        if not os.path.exists(downloadFolder):
+            os.makedirs(downloadFolder)
+    else:
+        if not os.path.exists(downloadFolder):
+            log("The download folder specified (" + downloadFolder + ") does not exist ", Fore.RED)
+
+    totalFiles = 0
+    clear()
+
+    if os.path.isfile("URLs.txt"):
+        print("URLs.txt exists")
+    else:
+        f = open("URLs.txt", "w+")
+        print("URLs.txt created")
+
+    if os.stat("URLs.txt").st_size == 0:
+        print("Please put URLs in URLs.txt")
+
+    file_object = open("URLs.txt", "r")
+    for line in file_object:
+        url = line.rstrip()
+
+        html = requests.get(url, headers=headers)
+        htmlAsText = html.text
+        dirName = htmlAsText[htmlAsText.find("<title>") + 7:htmlAsText.find("</title>")]
+        rstr = r"[\/\\\:\*\?\"\<\>\|\.]"  # '/ \ : * ? " < > | .'
+        dirName = re.sub(rstr, "_", dirName)
+        dirName += "/"
+        path = downloadFolder+dirName
+
+        print("\n======================================================\n")
+
+        print("\nCollecting file links from " + url + "...")
+        links = Extrair_Links(url)
+
+        if links is None:
+            print()
+            input(url + " Couldn't find pictures.")
+            exit()
+
+        print()
+        print("       URL       " + url)
+        print("       DIR       " + path)
+        print()
+        if not (os.path.isdir(path)):
+            try:
+                os.mkdir(path)
+                print()
+                log("Created directory {dir}".format(dir=path), Fore.GREEN)
+            except OSError as e:
+                log("Creation of directory {dir} failed: {err}".format(dir=path, err=e), Fore.RED)
+        print()
+
+        pass_to_func = []
+        for link in links:
+            pass_to_func.append([path, link])
+
+        print("Downloading " + str(len(pass_to_func)) + " files...")
+        pool = Pool(processes=cpu_count)
+        proc = pool.map_async(download, pass_to_func)
+        proc.wait()
+        pool.close()
+
+    exitText = input("\nFinished. Press enter to quit.")
