@@ -102,7 +102,7 @@ if __name__ == '__main__':
     response = requests.get("https://api.github.com/repos/MandoCoding/CheveretoDownloader/releases/latest")
     latestVersion = response.json()["tag_name"]
     currentVersion = "0.3"
-
+    clear()
     if latestVersion != currentVersion:
         print("A new version of CheveretoDownloader is available\n"
               "Download it here: https://github.com/MandoCoding/CheveretoDownloader/releases/latest\n")
@@ -120,7 +120,6 @@ if __name__ == '__main__':
             log("The download folder specified (" + downloadFolder + ") does not exist ", Fore.RED)
 
     totalFiles = 0
-    clear()
 
     if os.path.isfile("URLs.txt"):
         print("URLs.txt exists")
