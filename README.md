@@ -18,9 +18,9 @@ The script creates a new folder with the title of the album and downloads all im
 
 
 # Use
-Once all the installation steps are complete you can either double click on 'Start.bat' or the script itself 'CheveretoDownloader.py'
+Enter Album URLs in the URLs.txt file, each URL must be on a new line
 
-Enter a URL when required and press enter
+Run 'Start.bat' or the script itself 'CheveretoDownloader.py'
 
 The script will scrape all the image links from the album and then download them into a new folder with the album name 
 
