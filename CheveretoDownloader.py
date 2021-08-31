@@ -4,8 +4,8 @@ import requests
 import os
 import re
 from colorama import Fore, Style
-from geturls import Extrair_Links
 from multiprocessing import Pool
+from bs4 import BeautifulSoup, SoupStrainer
 import multiprocessing
 import settings
 
@@ -96,12 +96,71 @@ def download(passed_from_main):
         print("Failed to Download")
 
 
+def Extrair_Links(u):
+    # Extract links from gallery
+    try:
+        # create request, and soup
+        url = u
+        page = requests.get(url)
+        data = page.text
+        soup = BeautifulSoup(data, features="html5lib")
+        links = []
+        pages = []
+        correctedlinks = []
+        i = 1
+        inp = u
+        pages.append(inp)
+        print(inp)
+        while i < 2:
+            # searches for links within the page
+            reqs = requests.get(inp)
+            soup = BeautifulSoup(reqs.text, 'html.parser')
+            # searches for next page link
+            li = soup.find("li", {'class': 'pagination-next'})
+            if li == None:
+                i = 2
+            else:
+                for child in li.children:
+                    nextURL = child.get("href")
+                    print(nextURL)
+                    pages.append(nextURL)
+                if not nextURL:
+                    i = 2
+                else:
+                    inp = nextURL
+
+        # Removes blank links
+        for val in pages:
+            if val != None:
+                correctedlinks.append(val)
+
+        # Searches through links for image urls
+        s = requests.Session()
+        for link in correctedlinks:
+            with s.get(link) as r:
+                # parses the html
+                # searches for all image links in the html
+                bs = BeautifulSoup(r.text, 'html.parser')
+                new = bs.find('div', {'class': 'pad-content-listing'})
+                es = [image["src"] for image in new.findAll("img")]
+                for e in es:
+                    u = e.replace('.md.', '.').replace('.th.', '.')
+                    # caches the image urls in a list
+                    links.append(u)
+        linksP = list(dict.fromkeys(links))
+    except Exception as e:
+        print(e)
+        return None
+    else:
+        return linksP
+
+
 if __name__ == '__main__':
     log("", Fore.RESET)
 
     response = requests.get("https://api.github.com/repos/MandoCoding/CheveretoDownloader/releases/latest")
     latestVersion = response.json()["tag_name"]
-    currentVersion = "0.3"
+    currentVersion = "0.4"
     clear()
     if latestVersion != currentVersion:
         print("A new version of CheveretoDownloader is available\n"
@@ -134,12 +193,22 @@ if __name__ == '__main__':
     for line in file_object:
         url = line.rstrip()
 
+        Albuminp = requests.get(url)
+        searched = BeautifulSoup(Albuminp.text, 'html.parser')
+        AlbumName = searched.find(attrs={"data-text": "album-name"})
+        url = AlbumName.get('href')
+
         html = requests.get(url, headers=headers)
         htmlAsText = html.text
         dirName = htmlAsText[htmlAsText.find("<title>") + 7:htmlAsText.find("</title>")]
         rstr = r"[\/\\\:\*\?\"\<\>\|\.]"  # '/ \ : * ? " < > | .'
         dirName = re.sub(rstr, "_", dirName)
         dirName += "/"
+
+        dirRemove = searched.find("meta", {"property": "og:site_name"}).attrs['content']
+        dirRemove = " - " + dirRemove
+        dirName = dirName.replace(dirRemove, '')
+
         path = downloadFolder+dirName
 
         print("\n======================================================\n")
